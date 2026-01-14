@@ -1,4 +1,4 @@
-name: Publish Javadoc
+name: Publish Javadoc & Maven
 
 on:
   push:
@@ -22,13 +22,22 @@ jobs:
           
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
- 
+        
+      # 1. Genera el Javadoc
       - name: Build Javadoc
         run: ./gradlew javadoc -x test
         
+      # 2. NUEVO PASO: Juntar Javadoc + Maven 🤝
+      - name: Combine Javadoc and Maven
+        run: |
+          # Copiamos la carpeta 'maven' que está en la raíz de tu proyecto
+          # y la metemos DENTRO de la carpeta del Javadoc
+          cp -r maven build/docs/javadoc/maven
+        
+      # 3. Publicamos todo junto
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/docs/javadoc
-          keep_files: trues
+          # keep_files: true  <-- Ya no es necesario porque estamos copiando todo antes
