@@ -20,16 +20,19 @@ import java.util.List;
  * between robot logic and the Dashboard. It uses advanced Java reflection during initialization
  * to compile optimized tasks, ensuring <b>zero CPU overhead</b> during the match.
  * </p>
- * <h3>Features:</h3>
+ * <h2>Features:</h2>
  * <ul>
- * <li><b>{@link Signal} (Output):</b> Automatically publishes methods to the Dashboard (with bandwidth optimization).</li>
- * <li><b>{@link Tunable} (Input):</b> Injects Dashboard values directly into fields (PIDs, constants).</li>
- * <li><b>Lazy Initialization:</b> Waits for the first periodic cycle to ensure all field values are set before registering.</li>
+ * <li><b>{@link Signal} (Output):</b> Automatically publishes methods to the Dashboard.</li>
+ * <li><b>{@link Tunable} (Input):</b> Injects Dashboard values directly into fields.</li>
+ * <li><b>Lazy Initialization:</b> Waits for the first periodic cycle to ensure fields are set.</li>
  * </ul>
  */
 public abstract class IOSubsystem extends SubsystemBase {
 
-    private final String tableName;
+    /**
+     * The name of the subsystem
+     */
+    public final String tableName;
     private boolean isInitialized = false;
     
     // Pre-compiled tasks (Runnables) to avoid reflection during runtime

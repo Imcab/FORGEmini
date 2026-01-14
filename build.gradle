@@ -5,7 +5,7 @@ plugins {
 }
 
 group = 'com.stzteam.forgemini'
-version = '1.0.3'
+version = '1.0.4'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -45,4 +45,8 @@ publishing {
             url = layout.projectDirectory.dir('maven')
         }
     }
+}
+
+javadoc {
+    options.addStringOption('Xdoclint:none', '-quiet')
 }
