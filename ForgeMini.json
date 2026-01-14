@@ -12,7 +12,7 @@
       {
         "groupId": "com.stzteam.forgemini",
         "artifactId": "ForgeMini",
-        "version": "1.0.0"
+        "version": "1.0.1"
       }
     ],
     "cppDependencies": [],
