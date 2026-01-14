@@ -1,7 +1,6 @@
 package com.stzteam.forgemini.io;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import edu.wpi.first.util.struct.Struct;
 import edu.wpi.first.networktables.DoublePublisher;
 import edu.wpi.first.networktables.DoubleSubscriber;
 import edu.wpi.first.networktables.BooleanPublisher;
@@ -15,25 +14,34 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The optimized base class for ForgeMini subsystems.
+ * The high-performance base class for all ForgeMini subsystems.
  * <p>
- * Automatically handles data flow between the robot and the Dashboard using 
- * {@link Signal} (Output) and {@link Tunable} (Input/Adjustment) annotations.
- * This class abstracts away the complexity of NetworkTables, providing a clean 
- * and efficient API for subsystem development.
+ * This class abstracts the complexity of NetworkTables, providing a seamless bridge
+ * between robot logic and the Dashboard. It uses advanced Java reflection during initialization
+ * to compile optimized tasks, ensuring <b>zero CPU overhead</b> during the match.
  * </p>
+ * <h3>Features:</h3>
+ * <ul>
+ * <li><b>{@link Signal} (Output):</b> Automatically publishes methods to the Dashboard (with bandwidth optimization).</li>
+ * <li><b>{@link Tunable} (Input):</b> Injects Dashboard values directly into fields (PIDs, constants).</li>
+ * <li><b>Lazy Initialization:</b> Waits for the first periodic cycle to ensure all field values are set before registering.</li>
+ * </ul>
  */
 public abstract class IOSubsystem extends SubsystemBase {
 
     private final String tableName;
     private boolean isInitialized = false;
     
-    // Pre-compiled tasks (Runnables)
+    // Pre-compiled tasks (Runnables) to avoid reflection during runtime
     private final List<Runnable> signalTasks = new ArrayList<>();
     private final List<Runnable> tunableTasks = new ArrayList<>();
 
     /**
      * Creates a new IOSubsystem.
+     * <p>
+     * Note: NetworkTables registration is deferred until the first {@link #periodic()} call
+     * (Lazy Initialization) to ensure child class fields are fully initialized.
+     * </p>
      * @param tableName The name of the table in NetworkTables (e.g., "Shooter", "DriveTrain").
      */
     public IOSubsystem(String tableName) {
@@ -44,6 +52,9 @@ public abstract class IOSubsystem extends SubsystemBase {
     //  SECTION 1: SIGNALS (Output)
     // ============================================================
 
+    /**
+     * Scans methods for @Signal annotation and compiles optimized publishing tasks.
+     */
     private void registerSignals() {
         for (Method method : this.getClass().getDeclaredMethods()) {
             if (!method.isAnnotationPresent(Signal.class)) continue;
@@ -123,10 +134,8 @@ public abstract class IOSubsystem extends SubsystemBase {
         }
     }
     
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void createStructTask(String key, Method method, Class<?> type, int period, boolean checkChange) {
         try {
-            Struct<?> structObj = (Struct<?>) type.getField("struct").get(null);
             final int[] cycleCounter = {0};
             final Object[] lastVal = { null }; 
 
@@ -138,7 +147,8 @@ public abstract class IOSubsystem extends SubsystemBase {
                     Object value = method.invoke(this);
                     if (value != null) {
                         if (!checkChange || lastVal[0] == null || !lastVal[0].equals(value)) {
-                            NetworkIO.set(tableName, key, value, (Struct) structObj);
+                            // Delegates to magic NetworkIO to auto-resolve structs
+                            NetworkIO.set(tableName, key, value);
                             if(checkChange) lastVal[0] = value;
                         }
                     }
@@ -151,6 +161,9 @@ public abstract class IOSubsystem extends SubsystemBase {
     //  SECTION 2: TUNABLES (Input)
     // ============================================================
 
+    /**
+     * Scans fields for @Tunable annotation and configures bi-directional syncing.
+     */
     private void registerTunables() {
         NetworkTable table = NetworkTableInstance.getDefault().getTable(tableName);
         for (Field field : this.getClass().getDeclaredFields()) {
@@ -170,7 +183,7 @@ public abstract class IOSubsystem extends SubsystemBase {
     }
 
     private void setupDoubleTunable(NetworkTable table, String key, Field field) throws IllegalAccessException {
-        // AHORA SÍ leemos el valor real, porque el constructor de Sub ya terminó
+        // Read the actual initialized value from the subclass
         double initialValue = field.getDouble(this);
         var topic = table.getDoubleTopic(key);
         boolean exists = topic.exists();
@@ -180,6 +193,7 @@ public abstract class IOSubsystem extends SubsystemBase {
         if (!exists) {
             pub.set(initialValue);
         } else {
+            // Update local field immediately if value exists in NT
             field.setDouble(this, sub.get());
         }
 
@@ -223,7 +237,7 @@ public abstract class IOSubsystem extends SubsystemBase {
 
     @Override
     public void periodic() {
-        // Lazy Load
+        // Lazy Load: Ensures subclass fields are initialized before registration
         if (!isInitialized) {
             registerSignals();
             registerTunables();
@@ -241,10 +255,17 @@ public abstract class IOSubsystem extends SubsystemBase {
     }
 
     /**
-     * Define the periodic logic of your subsystem here.
+     * The main logic loop for the subsystem.
+     * <p>
+     * Override this method instead of {@code periodic()}. It runs every 20ms
+     * (or the robot loop time) after IO tasks have completed.
+     * </p>
      */
     public abstract void periodicLogic();
     
+    /**
+     * Closes all NetworkTable publishers and subscribers associated with this subsystem.
+     */
     public void close() {
         NetworkIO.closeAll(tableName);
     }

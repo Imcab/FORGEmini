@@ -3,55 +3,105 @@ package com.stzteam.forgemini.io;
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.util.struct.Struct;
 
+import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * NetworkTables Input/Output Engine.
  * <p>
- * Handles optimized communication with the Dashboard by caching Publishers and Subscribers.
- * This prevents the expensive creation of NT objects during every robot cycle.
+ * Handles optimized communication with the Dashboard.
+ * Now features <b>"Magic Struct"</b> support to automatically detect and publish 
+ * complex types (like {@code Pose2d}) without manual configuration.
  * </p>
  */
 public class NetworkIO {
 
     private static final NetworkTableInstance inst = NetworkTableInstance.getDefault();
     
-    // Cache maps to avoid creating objects every cycle (Performance Optimization)
+    // Cache maps to avoid creating objects every cycle
     private static final ConcurrentHashMap<String, Publisher> publishers = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Subscriber> subscribers = new ConcurrentHashMap<>();
+    
+    // Struct Cache (To avoid using expensive reflection every cycle)
+    private static final ConcurrentHashMap<Class<?>, Struct<?>> structCache = new ConcurrentHashMap<>();
 
-    // Private constructor to prevent instantiation
     private NetworkIO() {}
 
     // ============================================================
-    //  OUTPUT (SETTERS) - Sends data to Dashboard
+    //  OUTPUT (SETTERS)
     // ============================================================
 
     /**
-     * Publishes complex objects (Pose2d, ChassisSpeeds, SwerveStates) using Structs.
+     * The "Magic" setter for complex objects (e.g., Pose2d, ChassisSpeeds).
      * <p>
-     * This method automatically handles the serialization of the object using WPILib's Struct API.
+     * You <b>NO LONGER</b> need to pass the {@code .struct} object manually. 
+     * This method inspects the object at runtime, automatically finds its 
+     * associated struct, and publishes it to the Dashboard.
      * </p>
-     * @param <T> The type of the object.
-     * @param table The main table name (e.g., "DriveTrain").
-     * @param key The specific value name (e.g., "Pose").
-     * @param value The object to publish.
-     * @param struct The struct definition for serialization.
+     * @param table The table name.
+     * @param key The value name.
+     * @param value The object to publish (e.g., a Pose2d instance).
      */
-    @SuppressWarnings("unchecked")
-    public static <T> void set(String table, String key, T value, Struct<T> struct) {
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public static void set(String table, String key, Object value) {
+        if (value == null) return;
+
+        // If a primitive type slipped in here, redirect it to the fast overload (Safety)
+        if (value instanceof Double) { set(table, key, (double) value); return; }
+        if (value instanceof Boolean) { set(table, key, (boolean) value); return; }
+        if (value instanceof String) { set(table, key, (String) value); return; }
+
         String path = table + "/" + key;
-        Publisher pub = publishers.computeIfAbsent(path, k -> 
-            inst.getTable(table).getStructTopic(key, struct).publish()
-        );
-        try { ((StructPublisher<T>) pub).set(value); } catch (Exception e) {}
+        
+        // Find or create the publisher
+        Publisher pub = publishers.computeIfAbsent(path, k -> {
+            try {
+                // MAGIC: Automatically find the struct
+                Struct struct = getStructForClass(value.getClass());
+                if (struct != null) {
+                    return inst.getTable(table).getStructTopic(key, struct).publish();
+                } else {
+                    System.err.println("[NetworkIO] Error: No .struct found for class " + value.getClass().getSimpleName());
+                    return null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
+
+        // If the publisher was created successfully, send the data
+        if (pub instanceof StructPublisher) {
+            ((StructPublisher) pub).set(value);
+        }
     }
 
     /**
-     * Publishes a double value to NetworkTables.
+     * Helper method to find the static 'struct' field using reflection and cache it.
+     */
+    private static Struct<?> getStructForClass(Class<?> clazz) {
+        return structCache.computeIfAbsent(clazz, c -> {
+            try {
+                Field field = c.getField("struct");
+                return (Struct<?>) field.get(null);
+            } catch (Exception e) {
+                return null;
+            }
+        });
+    }
+
+    // ============================================================
+    //  SPECIFIC OVERLOADS (For maximum speed on primitives)
+    // ============================================================
+
+    /**
+     * Publishes a double value.
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
      * @param table The table name.
      * @param key The key name.
-     * @param value The value to send.
+     * @param value The value to publish.
      */
     public static void set(String table, String key, double value) {
         String path = table + "/" + key;
@@ -62,10 +112,10 @@ public class NetworkIO {
     }
     
     /**
-     * Publishes a String value to NetworkTables.
+     * Publishes a String value.
      * @param table The table name.
      * @param key The key name.
-     * @param value The string to send.
+     * @param value The value to publish.
      */
     public static void set(String table, String key, String value) {
         String path = table + "/" + key;
@@ -76,10 +126,10 @@ public class NetworkIO {
     }
 
     /**
-     * Publishes a boolean value to NetworkTables.
+     * Publishes a boolean value.
      * @param table The table name.
      * @param key The key name.
-     * @param value The boolean to send.
+     * @param value The value to publish.
      */
     public static void set(String table, String key, boolean value) {
         String path = table + "/" + key;
@@ -90,18 +140,15 @@ public class NetworkIO {
     }
 
     // ============================================================
-    //  INPUT (GETTERS) - Reads data from Dashboard
+    //  INPUT (GETTERS)
     // ============================================================
 
     /**
      * Retrieves a double from the Dashboard.
-     * <p>
-     * Useful for tunable PIDs or reading configuration values.
-     * </p>
      * @param table The table name.
      * @param key The key name.
-     * @param defaultValue The value to return if the key does not exist.
-     * @return The current value from the network, or the default value.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
      */
     public static double get(String table, String key, double defaultValue) {
         String path = table + "/" + key;
@@ -115,8 +162,8 @@ public class NetworkIO {
      * Retrieves a boolean from the Dashboard.
      * @param table The table name.
      * @param key The key name.
-     * @param defaultValue The value to return if the key does not exist.
-     * @return The current value from the network, or the default value.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
      */
     public static boolean get(String table, String key, boolean defaultValue) {
         String path = table + "/" + key;
@@ -132,14 +179,10 @@ public class NetworkIO {
     
     /**
      * Closes all publishers and subscribers associated with a specific table.
-     * <p>
-     * Call this when a subsystem is being destroyed or reset to prevent memory leaks.
-     * </p>
      * @param tableName The name of the table to clean up.
      */
     public static void closeAll(String tableName) {
         String prefix = tableName + "/";
-        // Clean publishers and subscribers for that specific table
         publishers.entrySet().removeIf(e -> checkAndClose(e, prefix));
         subscribers.entrySet().removeIf(e -> checkAndClose(e, prefix));
     }
