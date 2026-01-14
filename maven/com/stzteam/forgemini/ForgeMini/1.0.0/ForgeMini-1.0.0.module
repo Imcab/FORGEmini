@@ -1,0 +1,60 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.stzteam.forgemini",
+    "module": "ForgeMini",
+    "version": "1.0.0",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.10.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "ForgeMini-1.0.0.jar",
+          "url": "ForgeMini-1.0.0.jar",
+          "size": 935,
+          "sha512": "4a032100a1c72abca41fb0dec3417e03638f6195d3fc83beaa0e3dbf1b852725f2ec061badc2661f57b22e4ef68c65204a65a8c0a6677c1d09f63731c1e28481",
+          "sha256": "5db0c9302c637de88970983574b329efb5337487f4bbee7e465095eef0430b61",
+          "sha1": "a31dac8918410213d62484f5b6227c39ed7dfafd",
+          "md5": "54d56b13369cdb1ed107ca0794fafc69"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "files": [
+        {
+          "name": "ForgeMini-1.0.0.jar",
+          "url": "ForgeMini-1.0.0.jar",
+          "size": 935,
+          "sha512": "4a032100a1c72abca41fb0dec3417e03638f6195d3fc83beaa0e3dbf1b852725f2ec061badc2661f57b22e4ef68c65204a65a8c0a6677c1d09f63731c1e28481",
+          "sha256": "5db0c9302c637de88970983574b329efb5337487f4bbee7e465095eef0430b61",
+          "sha1": "a31dac8918410213d62484f5b6227c39ed7dfafd",
+          "md5": "54d56b13369cdb1ed107ca0794fafc69"
+        }
+      ]
+    }
+  ]
+}

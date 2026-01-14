@@ -1,0 +1,19 @@
+{
+    "fileName": "ForgeMini.json",
+    "name": "ForgeMini",
+    "version": "1.0.0",
+    "uuid": "7aa560ef-ecd3-4f27-931d-0deb09cb97a3",
+    "mavenUrls": [
+      "https://Imcab.github.io/ForgeMini/maven/"
+    ],
+    "jsonUrl": "https://Imcab.github.io/ForgeMini/ForgeMini.json",
+    "javaDependencies": [
+      {
+        "groupId": "com.stzteam.forgemini",
+        "artifactId": "ForgeMini",
+        "version": "1.0.0"
+      }
+    ],
+    "cppDependencies": [],
+    "jniDependencies": []
+  }

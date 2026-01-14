@@ -1,0 +1,45 @@
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+    id "edu.wpi.first.GradleRIO" version "2026.1.1" 
+}
+
+// TUS DATOS EXACTOS
+group = 'com.stzteam.forgemini'
+version = '1.0.0'
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            
+            // Así coincidirá con tu group
+            groupId = group
+            // Este es el nombre final de la librería (ForgeLite.jar)
+            artifactId = 'ForgeMini' 
+            version = version
+        }
+    }
+    
+    // Esto creará la carpeta "maven_repo" dentro de FORGELITE
+    repositories {
+        maven {
+            name = 'LocalRepo'
+            url = layout.buildDirectory.dir('maven_repo')
+        }
+    }
+}
