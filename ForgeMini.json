@@ -1,7 +1,7 @@
 {
     "fileName": "ForgeMini.json",
     "name": "ForgeMini",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "frcYear": "2026",
     "uuid": "7aa560ef-ecd3-4f27-931d-0deb09cb97a3",
     "mavenUrls": [
@@ -12,7 +12,7 @@
       {
         "groupId": "com.stzteam.forgemini",
         "artifactId": "ForgeMini",
-        "version": "1.0.4"
+        "version": "1.0.5"
       }
     ],
     "cppDependencies": [],

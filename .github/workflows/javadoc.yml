@@ -33,6 +33,7 @@ jobs:
           # Copiamos la carpeta 'maven' que está en la raíz de tu proyecto
           # y la metemos DENTRO de la carpeta del Javadoc
           cp -r maven build/docs/javadoc/maven
+          cp ForgeMini.json build/docs/javadoc/
         
       # 3. Publicamos todo junto
       - name: Deploy to GitHub Pages
