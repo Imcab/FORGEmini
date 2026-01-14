@@ -4,9 +4,8 @@ plugins {
     id "edu.wpi.first.GradleRIO" version "2026.1.1" 
 }
 
-// TUS DATOS EXACTOS
 group = 'com.stzteam.forgemini'
-version = '1.0.0'
+version = '1.0.1'
 
 java {
     sourceCompatibility = JavaVersion.VERSION_17
@@ -18,6 +17,14 @@ repositories {
 }
 
 dependencies {
+    // 1. El núcleo (Motores, Sensores, etc.)
+    implementation wpi.java.deps.wpilib()
+    
+    // 2. LA SOLUCIÓN: Forzamos la descarga de Comandos (Subsystems) manualmente
+    // Esto evita usar el JSON y asegura que baje la versión correcta (2026.1.1)
+    implementation "edu.wpi.first.wpilibNewCommands:wpilibNewCommands-java:${wpi.versions.wpilibVersion.get()}"
+
+    // 3. Tests
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.1'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
@@ -26,20 +33,16 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            
-            // Así coincidirá con tu group
             groupId = group
-            // Este es el nombre final de la librería (ForgeLite.jar)
             artifactId = 'ForgeMini' 
             version = version
         }
     }
     
-    // Esto creará la carpeta "maven_repo" dentro de FORGELITE
     repositories {
         maven {
             name = 'LocalRepo'
-            url = layout.buildDirectory.dir('maven_repo')
+            url = layout.projectDirectory.dir('maven')
         }
     }
 }
