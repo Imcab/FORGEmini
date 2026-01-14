@@ -26,8 +26,9 @@ import java.util.List;
 public abstract class IOSubsystem extends SubsystemBase {
 
     private final String tableName;
+    private boolean isInitialized = false;
     
-    // Pre-compiled tasks (Runnables) to avoid reflection during runtime
+    // Pre-compiled tasks (Runnables)
     private final List<Runnable> signalTasks = new ArrayList<>();
     private final List<Runnable> tunableTasks = new ArrayList<>();
 
@@ -37,17 +38,12 @@ public abstract class IOSubsystem extends SubsystemBase {
      */
     public IOSubsystem(String tableName) {
         this.tableName = tableName;
-        registerSignals();
-        registerTunables();
     }
 
     // ============================================================
     //  SECTION 1: SIGNALS (Output)
     // ============================================================
 
-    /**
-     * Scans the class for methods annotated with {@link Signal} and creates optimized publishing tasks.
-     */
     private void registerSignals() {
         for (Method method : this.getClass().getDeclaredMethods()) {
             if (!method.isAnnotationPresent(Signal.class)) continue;
@@ -70,28 +66,19 @@ public abstract class IOSubsystem extends SubsystemBase {
 
     private void createOptimizedSignalTask(String key, Method method, Signal config) {
         Class<?> type = method.getReturnType();
-
-        // Configuration variables extracted from the annotation
         boolean checkChange = config.onChange();
-        int period = Math.max(1, config.slowScale()); // Ensure at least 1
+        int period = Math.max(1, config.slowScale()); 
 
-        // Local state for lambdas (1-element arrays act as pointers in Java)
         final int[] cycleCounter = {0}; 
         
-        // Create base logic depending on the return type
         if (type == double.class || type == Double.class) {
-            final double[] lastVal = { Double.NaN }; // Initial impossible value
-            
+            final double[] lastVal = { Double.NaN };
             signalTasks.add(() -> {
-                // 1. Frequency Filter (SlowScale)
                 cycleCounter[0]++;
-                if (cycleCounter[0] < period) return; // Not time yet
-                cycleCounter[0] = 0; // Reset counter
-
+                if (cycleCounter[0] < period) return; 
+                cycleCounter[0] = 0; 
                 try {
                     double current = ((Number) method.invoke(this)).doubleValue();
-                    
-                    // 2. Change Filter (OnChange)
                     if (!checkChange || Math.abs(current - lastVal[0]) > 1e-5) { 
                         NetworkIO.set(tableName, key, current);
                         lastVal[0] = current;
@@ -100,18 +87,14 @@ public abstract class IOSubsystem extends SubsystemBase {
             });
         }
         else if (type == boolean.class || type == Boolean.class) {
-            // Use boolean array for state (and a first-run flag)
             final boolean[] lastVal = { false };
             final boolean[] isFirstRun = { true };
-
             signalTasks.add(() -> {
                 cycleCounter[0]++;
                 if (cycleCounter[0] < period) return;
                 cycleCounter[0] = 0;
-
                 try {
                     boolean current = (boolean) method.invoke(this);
-                    
                     if (!checkChange || isFirstRun[0] || current != lastVal[0]) {
                         NetworkIO.set(tableName, key, current);
                         lastVal[0] = current;
@@ -122,15 +105,12 @@ public abstract class IOSubsystem extends SubsystemBase {
         }
         else if (type == String.class) {
             final String[] lastVal = { null };
-            
             signalTasks.add(() -> {
                 cycleCounter[0]++;
                 if (cycleCounter[0] < period) return;
                 cycleCounter[0] = 0;
-
                 try {
                     String current = (String) method.invoke(this);
-                    // Null and change check
                     if (!checkChange || lastVal[0] == null || !lastVal[0].equals(current)) {
                         NetworkIO.set(tableName, key, current);
                         lastVal[0] = current;
@@ -139,32 +119,27 @@ public abstract class IOSubsystem extends SubsystemBase {
             });
         }
         else if (isStructSupported(type)) {
-             // Pass config to structs as well
              createStructTask(key, method, type, period, checkChange);
         }
     }
     
-    // Updated version for Structs
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void createStructTask(String key, Method method, Class<?> type, int period, boolean checkChange) {
         try {
             Struct<?> structObj = (Struct<?>) type.getField("struct").get(null);
             final int[] cycleCounter = {0};
-            final Object[] lastVal = { null }; // To compare struct objects (equals() might be costly)
+            final Object[] lastVal = { null }; 
 
             signalTasks.add(() -> {
                 cycleCounter[0]++;
                 if (cycleCounter[0] < period) return;
                 cycleCounter[0] = 0;
-
                 try { 
                     Object value = method.invoke(this);
                     if (value != null) {
-                        // Note: For complex structs, 'onChange' might be expensive (equals).
-                        // If 'checkChange' is true, we assume the user knows the object implements a fast equals().
                         if (!checkChange || lastVal[0] == null || !lastVal[0].equals(value)) {
                             NetworkIO.set(tableName, key, value, (Struct) structObj);
-                            if(checkChange) lastVal[0] = value; // Only save copy if checking changes
+                            if(checkChange) lastVal[0] = value;
                         }
                     }
                 } catch (Exception e) {}
@@ -176,35 +151,28 @@ public abstract class IOSubsystem extends SubsystemBase {
     //  SECTION 2: TUNABLES (Input)
     // ============================================================
 
-    /**
-     * Scans for {@link Tunable} fields and configures automatic injection.
-     */
     private void registerTunables() {
         NetworkTable table = NetworkTableInstance.getDefault().getTable(tableName);
-        
         for (Field field : this.getClass().getDeclaredFields()) {
             if (!field.isAnnotationPresent(Tunable.class)) continue;
 
             Tunable annotation = field.getAnnotation(Tunable.class);
             String key = annotation.key().isEmpty() ? field.getName() : annotation.key();
             field.setAccessible(true);
-
             try {
                 if (field.getType() == double.class) {
                     setupDoubleTunable(table, key, field);
                 } else if (field.getType() == boolean.class) {
                     setupBooleanTunable(table, key, field);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            } catch (Exception e) { e.printStackTrace(); }
         }
     }
 
     private void setupDoubleTunable(NetworkTable table, String key, Field field) throws IllegalAccessException {
+        // AHORA SÍ leemos el valor real, porque el constructor de Sub ya terminó
         double initialValue = field.getDouble(this);
         var topic = table.getDoubleTopic(key);
-        
         boolean exists = topic.exists();
         DoublePublisher pub = topic.publish();
         DoubleSubscriber sub = topic.subscribe(initialValue);
@@ -216,7 +184,6 @@ public abstract class IOSubsystem extends SubsystemBase {
         }
 
         final double[] lastValue = { sub.get() };
-
         tunableTasks.add(() -> {
             double currentNT = sub.get();
             if (currentNT != lastValue[0]) {
@@ -231,7 +198,6 @@ public abstract class IOSubsystem extends SubsystemBase {
     private void setupBooleanTunable(NetworkTable table, String key, Field field) throws IllegalAccessException {
         boolean initialValue = field.getBoolean(this);
         var topic = table.getBooleanTopic(key);
-        
         boolean exists = topic.exists();
         BooleanPublisher pub = topic.publish();
         BooleanSubscriber sub = topic.subscribe(initialValue);
@@ -240,7 +206,6 @@ public abstract class IOSubsystem extends SubsystemBase {
         else field.setBoolean(this, sub.get());
 
         final boolean[] lastValue = { sub.get() };
-
         tunableTasks.add(() -> {
             boolean currentNT = sub.get();
             if (currentNT != lastValue[0]) {
@@ -252,16 +217,19 @@ public abstract class IOSubsystem extends SubsystemBase {
         });
     }
 
-    // ============================================================
-    //  UTILITIES
-    // ============================================================
-
     private boolean isStructSupported(Class<?> type) {
         try { return type.getField("struct") != null; } catch (Exception e) { return false; }
     }
 
     @Override
-    public final void periodic() {
+    public void periodic() {
+        // Lazy Load
+        if (!isInitialized) {
+            registerSignals();
+            registerTunables();
+            isInitialized = true;
+        }
+
         // 1. Signals (Send Data)
         for (int i = 0; i < signalTasks.size(); i++) signalTasks.get(i).run();
 
@@ -274,16 +242,9 @@ public abstract class IOSubsystem extends SubsystemBase {
 
     /**
      * Define the periodic logic of your subsystem here.
-     * <p>
-     * Use this method for PID updates, motor control, state machines, etc.
-     * This replaces the standard {@code periodic()} method from WPILib.
-     * </p>
      */
     public abstract void periodicLogic();
     
-    /**
-     * Closes all network connections associated with this subsystem.
-     */
     public void close() {
         NetworkIO.closeAll(tableName);
     }
