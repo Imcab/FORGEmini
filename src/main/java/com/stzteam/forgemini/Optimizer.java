@@ -101,11 +101,4 @@ public class Optimizer {
         }
     }
 
-    /**
-     * Gets the current battery voltage.
-     * @return The battery voltage in volts.
-     */
-    public static double getVoltage() {
-        return RobotController.getBatteryVoltage();
-    }
 }

@@ -2,6 +2,7 @@ package com.stzteam.forgemini.io;
 
 import edu.wpi.first.networktables.*;
 import edu.wpi.first.util.struct.Struct;
+import edu.wpi.first.wpilibj.util.Color;
 
 import java.lang.reflect.Field;
 import java.util.concurrent.ConcurrentHashMap;
@@ -52,6 +53,11 @@ public class NetworkIO {
         if (value instanceof String) { set(table, key, (String) value); return; }
 
         String path = table + "/" + key;
+
+        if (value.getClass().isArray()) {
+            handleArray(table, key, path, value);
+            return;
+        }
         
         // Find or create the publisher
         Publisher pub = publishers.computeIfAbsent(path, k -> {
@@ -73,6 +79,55 @@ public class NetworkIO {
         // If the publisher was created successfully, send the data
         if (pub instanceof StructPublisher) {
             ((StructPublisher) pub).set(value);
+        }
+    }
+
+    /**
+     * Handles the logic for publishing arrays (Primitive Arrays & Struct Arrays).
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void handleArray(String table, String key, String path, Object value) {
+        
+        // A. Primitive Arrays
+        if (value instanceof double[]) {
+            Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getDoubleArrayTopic(key).publish());
+            ((DoubleArrayPublisher) pub).set((double[]) value);
+            return;
+        }
+        if (value instanceof boolean[]) {
+            Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getBooleanArrayTopic(key).publish());
+            ((BooleanArrayPublisher) pub).set((boolean[]) value);
+            return;
+        }
+        if (value instanceof String[]) {
+            Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getStringArrayTopic(key).publish());
+            ((StringArrayPublisher) pub).set((String[]) value);
+            return;
+        }
+
+        // B. Struct Arrays (e.g. Pose2d[])
+        Publisher pub = publishers.computeIfAbsent(path, k -> {
+            try {
+                // Get the type of the array elements (e.g., Pose2d.class)
+                Class<?> componentType = value.getClass().getComponentType();
+                Struct struct = getStructForClass(componentType);
+                
+                if (struct != null) {
+                    // IMPORTANT: We use getStructArrayTopic here
+                    return inst.getTable(table).getStructArrayTopic(key, struct).publish();
+                } else {
+                    System.err.println("[NetworkIO] Error: No .struct found for array type " + componentType.getSimpleName());
+                    return null;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        });
+
+        if (pub instanceof StructArrayPublisher) {
+            // Cast to Object[] is safe here because we are in rawtypes context
+            ((StructArrayPublisher) pub).set((Object[]) value);
         }
     }
 
@@ -139,6 +194,36 @@ public class NetworkIO {
         ((BooleanPublisher) pub).set(value);
     }
 
+    /**
+     * Publishes a double array value.
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param table The table name.
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public static void set(String table, String key, double[] value) {
+        String path = table + "/" + key;
+        Publisher pub = publishers.computeIfAbsent(path, k -> 
+            inst.getTable(table).getDoubleArrayTopic(key).publish()
+        );
+        ((DoubleArrayPublisher) pub).set(value);
+    }
+
+    /**
+     * Publishes a Color value (hexString).
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param table The table name.
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public static void set(String table, String key, Color value){
+        set(table, key, value.toHexString());
+    }
+
     // ============================================================
     //  INPUT (GETTERS)
     // ============================================================
@@ -171,6 +256,21 @@ public class NetworkIO {
             inst.getTable(table).getBooleanTopic(key).subscribe(defaultValue)
         );
         return ((BooleanSubscriber) sub).get();
+    }
+
+    /**
+     * Retrieves a Color from the Dashboard.
+     * @param table The table name.
+     * @param key The key name.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
+     */
+    public static double[] get(String table, String key, double[] defaultValue) {
+        String path = table + "/" + key;
+        Subscriber sub = subscribers.computeIfAbsent(path, k -> 
+            inst.getTable(table).getDoubleArrayTopic(key).subscribe(defaultValue)
+        );
+        return ((DoubleArraySubscriber) sub).get();
     }
 
     // ============================================================

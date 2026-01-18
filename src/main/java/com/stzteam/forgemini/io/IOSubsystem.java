@@ -7,6 +7,7 @@ import edu.wpi.first.networktables.BooleanPublisher;
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.wpilibj.util.Color;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -265,7 +266,114 @@ public abstract class IOSubsystem extends SubsystemBase {
      * </p>
      */
     public abstract void periodicLogic();
-    
+
+    // ============================================================
+    //  OUTPUT (SETTERS)
+    // ============================================================
+
+    /**
+     * Publishes a double value.
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public void setEntry(String key, double value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+    /**
+     * Publishes a boolean value.
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public void setEntry(String key, boolean value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+    /**
+     * Publishes a String value.
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public void setEntry(String key, String value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+    /**
+     * Publishes a Color value (hexString).
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public void setEntry(String key, Color value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+    /**
+     * Publishes a double array value.
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public void setEntry(String key, double[] value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+    /**
+     * The "Magic" setter for complex objects (e.g., Pose2d, ChassisSpeeds).
+     * <p>
+     * You <b>NO LONGER</b> need to pass the {@code .struct} object manually. 
+     * This method inspects the object at runtime, automatically finds its 
+     * associated struct, and publishes it to the Dashboard.
+     * </p>
+     * @param key The value name.
+     * @param value The object to publish (e.g., a Pose2d instance).
+     */
+    public void setEntry(String key, Object value){
+        NetworkIO.set(tableName, key, value);
+    }
+
+
+    // ============================================================
+    //  INPUT (GETTERS)
+    // ============================================================
+
+    /**
+     * Retrieves a double from the Dashboard.
+     * @param key The key name.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
+     */
+    public void getEntry(String key, double defaultValue){
+        NetworkIO.get(tableName, key, defaultValue);
+    }
+
+    /**
+     * Retrieves a double from the Dashboard.
+     * @param table The table name.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
+     */
+    public void getEntry(String key, boolean defaultValue){
+        NetworkIO.get(tableName, key, defaultValue);
+    }
+
+    /**
+     * Retrieves a double from the Dashboard.
+     * @param table The table name.
+     * @param defaultValue The value to return if not found.
+     * @return The value from NetworkTables.
+     */
+    public void getEntry(String key, double[] defaultValue){
+        NetworkIO.get(tableName, key, defaultValue);
+    }
+
     /**
      * Closes all NetworkTable publishers and subscribers associated with this subsystem.
      */
