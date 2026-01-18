@@ -31,7 +31,7 @@ import java.util.List;
 public abstract class IOSubsystem extends SubsystemBase {
 
     /**
-     * The name of the subsystem
+     * The name of the subsystem table in NetworkTables.
      */
     public final String tableName;
     private boolean isInitialized = false;
@@ -248,130 +248,67 @@ public abstract class IOSubsystem extends SubsystemBase {
             isInitialized = true;
         }
 
-        // 1. Signals (Send Data)
-        for (int i = 0; i < signalTasks.size(); i++) signalTasks.get(i).run();
-
-        // 2. Tunables (Receive Data)
+        // 1. Tunables (INPUT): Read fresh data first so Logic uses current values
         for (int i = 0; i < tunableTasks.size(); i++) tunableTasks.get(i).run();
 
-        // 3. User Logic
+        // 2. User Logic (PROCESS): Run the subsystem behavior
         periodicLogic();
+
+        // 3. Signals (OUTPUT): Publish the results of this cycle immediately
+        for (int i = 0; i < signalTasks.size(); i++) signalTasks.get(i).run();
     }
 
     /**
      * The main logic loop for the subsystem.
      * <p>
      * Override this method instead of {@code periodic()}. It runs every 20ms
-     * (or the robot loop time) after IO tasks have completed.
+     * (or the robot loop time) synchronized with IO tasks.
      * </p>
      */
     public abstract void periodicLogic();
 
     // ============================================================
-    //  OUTPUT (SETTERS)
+    //  OUTPUT (MANUAL SETTERS)
     // ============================================================
 
-    /**
-     * Publishes a double value.
-     * <p>
-     * Explicit overload for maximum performance (bypasses reflection).
-     * </p>
-     * @param key The key name.
-     * @param value The value to publish.
-     */
     public void setEntry(String key, double value){
         NetworkIO.set(tableName, key, value);
     }
 
-    /**
-     * Publishes a boolean value.
-     * @param key The key name.
-     * @param value The value to publish.
-     */
     public void setEntry(String key, boolean value){
         NetworkIO.set(tableName, key, value);
     }
 
-    /**
-     * Publishes a String value.
-     * @param key The key name.
-     * @param value The value to publish.
-     */
     public void setEntry(String key, String value){
         NetworkIO.set(tableName, key, value);
     }
 
-    /**
-     * Publishes a Color value (hexString).
-     * <p>
-     * Explicit overload for maximum performance (bypasses reflection).
-     * </p>
-     * @param key The key name.
-     * @param value The value to publish.
-     */
     public void setEntry(String key, Color value){
         NetworkIO.set(tableName, key, value);
     }
 
-    /**
-     * Publishes a double array value.
-     * <p>
-     * Explicit overload for maximum performance (bypasses reflection).
-     * </p>
-     * @param key The key name.
-     * @param value The value to publish.
-     */
     public void setEntry(String key, double[] value){
         NetworkIO.set(tableName, key, value);
     }
 
-    /**
-     * The "Magic" setter for complex objects (e.g., Pose2d, ChassisSpeeds).
-     * <p>
-     * You <b>NO LONGER</b> need to pass the {@code .struct} object manually. 
-     * This method inspects the object at runtime, automatically finds its 
-     * associated struct, and publishes it to the Dashboard.
-     * </p>
-     * @param key The value name.
-     * @param value The object to publish (e.g., a Pose2d instance).
-     */
     public void setEntry(String key, Object value){
         NetworkIO.set(tableName, key, value);
     }
 
-
     // ============================================================
-    //  INPUT (GETTERS)
+    //  INPUT (MANUAL GETTERS)
     // ============================================================
 
-    /**
-     * Retrieves a double from the Dashboard.
-     * @param key The key name.
-     * @param defaultValue The value to return if not found.
-     * @return The value from NetworkTables.
-     */
-    public void getEntry(String key, double defaultValue){
-        NetworkIO.get(tableName, key, defaultValue);
+    public double getDouble(String key, double defaultValue){
+        return NetworkIO.get(tableName, key, defaultValue);
     }
 
-    /**
-     * Retrieves a double from the Dashboard.
-     * @param table The table name.
-     * @param defaultValue The value to return if not found.
-     * @return The value from NetworkTables.
-     */
-    public void getEntry(String key, boolean defaultValue){
-        NetworkIO.get(tableName, key, defaultValue);
+    public boolean getBoolean(String key, boolean defaultValue){
+        return NetworkIO.get(tableName, key, defaultValue);
     }
 
-    /**
-     * Retrieves a double from the Dashboard.
-     * @param table The table name.
-     * @param defaultValue The value to return if not found.
-     * @return The value from NetworkTables.
-     */
-    public void getEntry(String key, double[] defaultValue){
-        NetworkIO.get(tableName, key, defaultValue);
+    public double[] getDoubleArray(String key, double[] defaultValue){
+        return NetworkIO.get(tableName, key, defaultValue);
     }
 
     /**
