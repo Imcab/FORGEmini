@@ -1,0 +1,188 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "com.stzteam.forgemini",
+    "module": "ForgeMini",
+    "version": "1.0.9",
+    "attributes": {
+      "org.gradle.status": "release"
+    }
+  },
+  "createdBy": {
+    "gradle": {
+      "version": "8.10.2"
+    }
+  },
+  "variants": [
+    {
+      "name": "apiElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-api"
+      },
+      "files": [
+        {
+          "name": "ForgeMini-1.0.9.jar",
+          "url": "ForgeMini-1.0.9.jar",
+          "size": 17260,
+          "sha512": "93aed5527ca936e322966a56a8350bc9789c3e79c3074a25377e3a1147de10981dfea575b6febb18d739100297089b8bc32ca8cad0fa176adce0e64dc86dcf6a",
+          "sha256": "3b0c0c3ab7e1458e81230a77f5fe1dd7e47d1d6e6a3351f24143081fc80fade7",
+          "sha1": "549db4b0f32223afaccd14c2e3accb53fb15255d",
+          "md5": "bd4b0ed46a1e79dc905c1c515c5ed61f"
+        }
+      ]
+    },
+    {
+      "name": "runtimeElements",
+      "attributes": {
+        "org.gradle.category": "library",
+        "org.gradle.dependency.bundling": "external",
+        "org.gradle.jvm.version": 17,
+        "org.gradle.libraryelements": "jar",
+        "org.gradle.usage": "java-runtime"
+      },
+      "dependencies": [
+        {
+          "group": "edu.wpi.first.wpilibj",
+          "module": "wpilibj-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpimath",
+          "module": "wpimath-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.ntcore",
+          "module": "ntcore-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cscore",
+          "module": "cscore-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.cameraserver",
+          "module": "cameraserver-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.hal",
+          "module": "hal-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpinet",
+          "module": "wpinet-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiutil",
+          "module": "wpiutil-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.apriltag",
+          "module": "apriltag-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpiunits",
+          "module": "wpiunits-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.epilogue",
+          "module": "epilogue-runtime-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        },
+        {
+          "group": "edu.wpi.first.thirdparty.frc2025.opencv",
+          "module": "opencv-java",
+          "version": {
+            "requires": "4.10.0-3"
+          }
+        },
+        {
+          "group": "org.ejml",
+          "module": "ejml-simple",
+          "version": {
+            "requires": "0.44.0"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-annotations",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-core",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "com.fasterxml.jackson.core",
+          "module": "jackson-databind",
+          "version": {
+            "requires": "2.19.2"
+          }
+        },
+        {
+          "group": "us.hebi.quickbuf",
+          "module": "quickbuf-runtime",
+          "version": {
+            "requires": "1.4"
+          }
+        },
+        {
+          "group": "edu.wpi.first.wpilibNewCommands",
+          "module": "wpilibNewCommands-java",
+          "version": {
+            "requires": "2026.1.1"
+          }
+        }
+      ],
+      "files": [
+        {
+          "name": "ForgeMini-1.0.9.jar",
+          "url": "ForgeMini-1.0.9.jar",
+          "size": 17260,
+          "sha512": "93aed5527ca936e322966a56a8350bc9789c3e79c3074a25377e3a1147de10981dfea575b6febb18d739100297089b8bc32ca8cad0fa176adce0e64dc86dcf6a",
+          "sha256": "3b0c0c3ab7e1458e81230a77f5fe1dd7e47d1d6e6a3351f24143081fc80fade7",
+          "sha1": "549db4b0f32223afaccd14c2e3accb53fb15255d",
+          "md5": "bd4b0ed46a1e79dc905c1c515c5ed61f"
+        }
+      ]
+    }
+  ]
+}
