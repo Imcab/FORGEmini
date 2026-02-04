@@ -273,6 +273,27 @@ public class NetworkIO {
         return ((DoubleArraySubscriber) sub).get();
     }
 
+    public static void processInputs(String rootTable, String subTable, Object inputs) {
+        Class<?> clazz = inputs.getClass();
+
+        String basePath = rootTable + "/" + subTable;
+        
+        Field[] fields = clazz.getFields();
+
+        for (Field field : fields) {
+            try {
+                String key = field.getName();
+                Object value = field.get(inputs);
+                if (value == null) continue;
+                set(basePath, key, value);
+
+            } catch (IllegalAccessException e) {
+                System.err.println("[NetworkIO] No se pudo leer el campo: " + field.getName());
+            }
+        }
+    }
+    
+
     // ============================================================
     //  UTILITIES
     // ============================================================
