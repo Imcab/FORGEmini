@@ -51,6 +51,7 @@ public class NetworkIO {
         if (value instanceof Double) { set(table, key, (double) value); return; }
         if (value instanceof Boolean) { set(table, key, (boolean) value); return; }
         if (value instanceof String) { set(table, key, (String) value); return; }
+        if (value instanceof Integer){ set(table, key, (int) value); return;}
 
         String path = table + "/" + key;
 
@@ -62,7 +63,7 @@ public class NetworkIO {
         // Find or create the publisher
         Publisher pub = publishers.computeIfAbsent(path, k -> {
             try {
-                // MAGIC: Automatically find the struct
+          
                 Struct struct = getStructForClass(value.getClass());
                 if (struct != null) {
                     return inst.getTable(table).getStructTopic(key, struct).publish();
@@ -102,6 +103,25 @@ public class NetworkIO {
         if (value instanceof String[]) {
             Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getStringArrayTopic(key).publish());
             ((StringArrayPublisher) pub).set((String[]) value);
+            return;
+        }
+
+        if (value instanceof int[]) {
+            Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getIntegerArrayTopic(key).publish());
+            
+            int[] intArray = (int[]) value;
+            long[] longArray = new long[intArray.length];
+            for (int i = 0; i < intArray.length; i++) {
+                longArray[i] = intArray[i];
+            }
+            
+            ((IntegerArrayPublisher) pub).set(longArray);
+            return;
+        }
+
+        if (value instanceof float[]) {
+            Publisher pub = publishers.computeIfAbsent(path, k -> inst.getTable(table).getFloatArrayTopic(key).publish());
+            ((FloatArrayPublisher) pub).set((float[]) value);
             return;
         }
 
@@ -165,6 +185,23 @@ public class NetworkIO {
         );
         ((DoublePublisher) pub).set(value);
     }
+
+    /**
+     * Publishes an int value.
+     * <p>
+     * Explicit overload for maximum performance (bypasses reflection).
+     * </p>
+     * @param table The table name.
+     * @param key The key name.
+     * @param value The value to publish.
+     */
+    public static void set(String table, String key, int value) {
+        String path = table + "/" + key;
+        Publisher pub = publishers.computeIfAbsent(path, k -> 
+            inst.getTable(table).getIntegerTopic(key).publish()
+        );
+        ((IntegerPublisher) pub).set(value);
+    }
     
     /**
      * Publishes a String value.
@@ -210,6 +247,7 @@ public class NetworkIO {
         );
         ((DoubleArrayPublisher) pub).set(value);
     }
+
 
     /**
      * Publishes a Color value (hexString).
